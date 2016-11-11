@@ -1,6 +1,8 @@
 import numpy as np
 from osgeo import gdal, osr
 import datetime as dt
+import matplotlib.pyplot as plt
+#import pylab
 
 # Extracts the coordinates of an image in the native projection and
 # returns a 2D arrays of these coordinates.
@@ -87,7 +89,7 @@ def GetQBirdRGB(fili):
     g = band2.ReadAsArray()
     r = band3.ReadAsArray()
 
-    cube = np.empty([nx,ny,3], dtype=b.dtype)
+    cube = np.empty([ny,nx,3], dtype=b.dtype)
     cube[:,:,0] = r
     cube[:,:,1] = g
     cube[:,:,2] = b
@@ -99,16 +101,16 @@ def PlotQBirdImage(filein, fileout, figsize=(5,5)):
 
     rgb = GetQBirdRGB(filein)
 
-    rgb = ma.masked_where(rgb<1,rgb)
+    rgb = np.ma.masked_where(rgb<1,rgb)
 
-    image = (0.299*rgb[:,:,0] + 0.587*rgb[:,:,1] + 0.114*rgb[:,:2])
+    image = (0.299*rgb[:,:,0] + 0.587*rgb[:,:,1] + 0.114*rgb[:,:,2])
 
-    fig = figure(figsize=figsize)
-    ax=gca()
-    im2 = imshow(QBIRD, vmin = 0, vmax = 255, cmap = cm.gist_gray, rasterized=True)
-    subplots_adjust(bottom=0.09, left=0.11, top = 0.94, right=0.99, hspace=0.22)
-    savefig(fileout, dpi=300)
-    close(fig)
+    fig = plt.figure(figsize=(5,5))
+    #ax=gca()
+    im2 = plt.imshow(QBIRD, vmin = 0, vmax = 255, cmap = cm.gist_gray, rasterized=True)
+    plt.subplots_adjust(bottom=0.09, left=0.11, top = 0.94, right=0.99, hspace=0.22)
+    plt.savefig(fileout, dpi=300)
+    fig.close()
 
     return
 
