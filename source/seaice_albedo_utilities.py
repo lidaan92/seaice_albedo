@@ -4,13 +4,13 @@ import numpy as np
 import datetime
 import pandas as pd
 
-# Reads the sheba spectra data from Don Perovich and returns two Pandas dataframes: one containing
-# information about the samples including date, type of target and general target code; and another containing
-# the spectra. 
 def load_sheba_spectra():
-	
-	#fili = "C:/Users/apbarret/Documents/data/Sheba2/ShebaSpectral.csv"
-	
+	"""
+        Reads the sheba spectra data from Don Perovich and returns two Pandas dataframes: one containing
+        information about the samples including date, type of target and general target code; and another containing
+        the spectra.
+        """
+
 	f = open( "C:/Users/apbarret/Documents/data/Sheba2/ShebaSpectral.csv", 'r' )
 
 	for il in np.arange(0,7):
@@ -60,8 +60,12 @@ def modis_srf():
 	USAGE: wavelength, srf = modis_srf()
 
 	Loads MODIS spectral response functions from MODIS.f
+
+        Returns: a tuple containing a list of wavelengths for the filter function and
+                 the weights of the filter function
 	"""
-		
+	from constants import MODIS_SRF_PATH
+ 	
 	import re
 	p0 = re.compile( '      DATA' )
 	p1 = re.compile( '     A.*,')
@@ -73,8 +77,7 @@ def modis_srf():
 
 	rsr = {}
 
-	rsr_file = "C:/Users/apbarret/Documents/data/Sheba2/MODIS.f"
-	f = open( rsr_file, "r" )
+	f = open( MODIS_SRF_PATH, "r" )
 	lines = f.readlines()
 	for l in lines:
 		if p0.match( l ):
@@ -122,6 +125,18 @@ def modis_bbalbedo( spwv, spal, flwv, filt ):
 	return(modr)
 
 def spectra2modis(specLib, wv, srf, code=None):
+    """
+    Converts a spectral library to a dataframe containing MODIS band albedos
+
+    USAGE: df = sepctra2modis(specLib, wv, srf, code=None)
+
+    specLib - a spectral library object returned by spectral.io.envi.open()
+    wv      - list of wavelengths returned by modis_srf()
+    srf     - list of spectral response function weights returned by modis_srf()
+    code    - optional code to assign to band albedos
+
+    Returns: pandas dataframe containing band albedos
+    """
     
     from seaice_albedo_utilities import modis_srf, modis_bbalbedo
     import re
@@ -191,33 +206,97 @@ def spectral_mixture_solver(ice, pond, lead, b):
 
 def find_three_surface(ice_df, pond_df, lead_df, surface):
 	
-	"""
-	USAGE: area_frac, rmse = find_three_surface(ice_df, pond_df, lead_df, surface)
-	"""
+    """
+    USAGE: area_frac, rmse = find_three_surface(ice_df, pond_df, lead_df, surface)
+
+    ice_df, pond_df, lead_df - dataframes containing MODIS band albedos
+    
+    """
 	
-	nice = ice_df['code'].count()
-	npond = pond_df['code'].count()
-	nlead = lead_df['code'].count()
-	
-	# Find best three surface solution
-	area_frac = []
-	rmse_list = []
-	for iceid in np.arange(0,nice):
-		for pndid in np.arange(0,npond):
-			for ledid in np.arange(0,nlead):
+    nice = ice_df['code'].count()
+    npond = pond_df['code'].count()
+    nlead = lead_df['code'].count()
+    
+    # Find best three surface solution
+    area_frac = []
+    rmse_list = []
+    for iceid in np.arange(0,nice):
+        for pndid in np.arange(0,npond):
+            for ledid in np.arange(0,nlead):
             
-				a, resid, rmse = spectral_mixture_solver(ice_df[['band1','band2','band3','band4']].loc[iceid].values,
-													     pond_df[['band1','band2','band3','band4']].loc[pndid].values,
-                                                         lead_df[['band1','band2','band3','band4']].loc[ledid].values,
+                a, resid, rmse = spectral_mixture_solver(ice_df[['band1',
+                                                                 'band2',
+                                                                 'band3',
+                                                                 'band4']].iloc[iceid].values,
+							 pond_df[['band1',
+                                                                  'band2',
+                                                                  'band3',
+                                                                  'band4']].iloc[pndid].values,
+                                                         lead_df[['band1',
+                                                                  'band2',
+                                                                  'band3',
+                                                                  'band4']].iloc[ledid].values,
                                                          surface)
     
-				isrange = np.all((a > -0.01) & (a < 1.01))
-				isresid = np.all((resid[0:3] < 0.025) & (resid[1:4] < 0.025) & (resid[2:] < 0.025))
-				isrmse = rmse < 0.025
-				isvalid = np.all((isrange,isresid,isrmse))
+                isrange = np.all((a > -0.01) & (a < 1.01))
+                isresid = np.all((resid[0:3] < 0.025) & (resid[1:4] < 0.025) & (resid[2:] < 0.025))
+                isrmse = rmse < 0.025
+                isvalid = np.all((isrange,isresid,isrmse))
         
-				if (isvalid):
-					area_frac.append(a)
-					rmse_list.append(rmse)
+                if (isvalid):
+                        area_frac.append(a)
+                        rmse_list.append(rmse)
             
-	return (area_frac, rmse_list)
+    return (area_frac, rmse_list)
+
+def read_melt_pond_grid(fili):
+    """
+    Reads grid of melt pond statistics from NOAA Beaufort sea melt pond data set 
+    
+    Fetterer, F., S. Wilds, and J. Sloan. 2008. Arctic sea ice melt pond statistics and maps, 1999-2001, 
+    [list the dates of the data used]. Boulder, Colorado USA: National Snow and Ice Data Center. 
+    http://dx.doi.org/10.7265/N5PK0D32
+    
+    Argument
+    --------
+    fili - filepath
+    
+    Returns
+    -------
+    tuple of grids giving fractions of ice, pond and open water
+    """
+    
+    import numpy.ma as ma
+    import numpy as np
+    import re
+    import urllib
+
+    if (re.match("ftp:",fili)):
+        f = urllib.urlopen(fili)
+    else:
+        f = open(fili, 'r')
+
+    # Read through header
+    for il in np.arange(0,3):
+        f.readline()
+    
+    # Read column headings. 
+    header = f.readline()
+
+    tmp = np.genfromtxt(f)
+
+    f.close()
+
+    row = np.int8(np.mod(tmp[:,0],100.))
+    col = np.int8(np.floor(tmp[:,0]/100))
+
+    ice_grid = tmp[:,1].reshape(20,20)
+    pond_grid = tmp[:,2].reshape(20,20)
+    owtr_grid = tmp[:,3].reshape(20,20)
+
+    # Mask grids
+    ice_grid = ma.masked_where(ice_grid > 9., ice_grid)
+    pond_grid = ma.masked_where(pond_grid > 9., pond_grid)
+    owtr_grid = ma.masked_where(owtr_grid > 9., owtr_grid)
+
+    return (ice_grid, pond_grid, owtr_grid)
