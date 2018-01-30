@@ -9,10 +9,12 @@ LIBRARY_DIRI = os.path.join('..','data')
 ICE_LIBRARY_FILE = "Sheba.SpectralLibrary.ice.filled.hdr"
 POND_LIBRARY_FILE = "Sheba.SpectralLibrary.pond.filled.hdr"
 OWTR_LIBRARY_FILE = "Sheba.SpectralLibrary.lead.filled.hdr"
+SNOW_LIBRARY_FILE = "Sheba.SpectralLibrary.snow.filled.hdr"
 
 ICE_LIBRARY_PATH = os.path.join(LIBRARY_DIRI,ICE_LIBRARY_FILE)
 POND_LIBRARY_PATH = os.path.join(LIBRARY_DIRI,POND_LIBRARY_FILE)
 OWTR_LIBRARY_PATH = os.path.join(LIBRARY_DIRI,OWTR_LIBRARY_FILE)
+SNOW_LIBRARY_PATH = os.path.join(LIBRARY_DIRI,SNOW_LIBRARY_FILE)
 
 # MODIS spectral response function file path
 #MODIS_SRF_DIRI = "/disks/arctic5_raid/abarrett/ShebaSpectral"
