@@ -100,7 +100,7 @@ def read_shebaspectral_csv(fili):
 	
 	return date, target, wavelength, spectra
 
-def generate_library_header(spectra, wavelength, target, date, name):
+def generate_library_header(spectra, wavelength, target=None, date=None, location=None, name=None):
     
     # Get dimensions of spectra array [0]: wavebands, [1]: spectra
     dims = spectra.shape
@@ -123,6 +123,7 @@ def generate_library_header(spectra, wavelength, target, date, name):
     dict["original names"] = target
     dict["spectra dates"] = date
     dict["spectra names"] = name
+    dict["spectra locations"] = location
     dict["wavelength"] = wavelength
     
     return dict
